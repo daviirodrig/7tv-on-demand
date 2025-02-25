@@ -88,18 +88,21 @@ app.get('/api/emote/:emoteName', async (req: Request, res: Response, next: NextF
   }
 });
 
-// Rota principal para buscar emotes (retorna a imagem diretamente)
-app.get('/:emoteName', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+// Função auxiliar para processar requisições de emotes
+const handleEmoteRequest = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+  emoteName: string,
+  format: 'webp' | 'avif' | 'gif' = 'webp'
+): Promise<void> => {
   try {
-    const { emoteName } = req.params;
-
     if (!emoteName) {
       res.status(400).json({ error: 'Nome do emote não fornecido' });
       return;
     }
 
     const size = (req.query.size as '1x' | '2x' | '3x' | '4x') || '3x';
-    const format = (req.query.format as 'webp' | 'avif' | 'gif') || 'webp';
 
     // Busca o emote pelo nome
     const emote = await findEmote(emoteName);
@@ -121,6 +124,31 @@ app.get('/:emoteName', async (req: Request, res: Response, next: NextFunction): 
   } catch (error) {
     next(error);
   }
+};
+
+// Rota para emotes com extensão .webp
+app.get('/:emoteName.webp', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  const emoteName = req.params.emoteName || '';
+  await handleEmoteRequest(req, res, next, emoteName, 'webp');
+});
+
+// Rota para emotes com extensão .avif
+app.get('/:emoteName.avif', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  const emoteName = req.params.emoteName || '';
+  await handleEmoteRequest(req, res, next, emoteName, 'avif');
+});
+
+// Rota para emotes com extensão .gif
+app.get('/:emoteName.gif', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  const emoteName = req.params.emoteName || '';
+  await handleEmoteRequest(req, res, next, emoteName, 'gif');
+});
+
+// Rota principal para buscar emotes (retorna a imagem diretamente)
+app.get('/:emoteName', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  const emoteName = req.params.emoteName || '';
+  const format = (req.query.format as 'webp' | 'avif' | 'gif') || 'webp';
+  await handleEmoteRequest(req, res, next, emoteName, format);
 });
 
 // Rota para a raiz
@@ -150,8 +178,14 @@ app.get('/', (_req: Request, res: Response) => {
       <body>
         <h1>7TV On Demand</h1>
         <p>Use esta API para buscar emotes do 7TV.</p>
-        <p>Exemplo de uso: <code>GET /{nome-do-emote}</code></p>
-        <p>Parâmetros opcionais: <code>size</code> (1x, 2x, 3x, 4x) e <code>format</code> (webp, avif, gif)</p>
+        <p>Exemplos de uso:</p>
+        <ul>
+          <li><code>GET /{nome-do-emote}</code> - Retorna o emote como imagem</li>
+          <li><code>GET /{nome-do-emote}.webp</code> - Retorna o emote como WebP</li>
+          <li><code>GET /{nome-do-emote}.avif</code> - Retorna o emote como AVIF</li>
+          <li><code>GET /{nome-do-emote}.gif</code> - Retorna o emote como GIF (se for animado)</li>
+        </ul>
+        <p>Parâmetros opcionais: <code>size</code> (1x, 2x, 3x, 4x)</p>
         <p>Para listar todos os emotes disponíveis: <code>GET /api/emotes</code></p>
         <p>Para obter informações de um emote específico: <code>GET /api/emote/{nome-do-emote}</code></p>
       </body>
