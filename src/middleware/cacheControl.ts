@@ -7,7 +7,7 @@ import { Request, Response, NextFunction } from 'express';
 export const cacheControl = (maxAge: number = 3600) => {
   return (req: Request, res: Response, next: NextFunction) => {
     // Configura o cache-control
-    res.setHeader('Cache-Control', `public, max-age=${maxAge}, s-maxage=${maxAge * 2}`);
+    res.setHeader('Cache-Control', `max-age=${maxAge}`);
 
     // Configura o Vary para informar que a resposta pode variar de acordo com o Accept
     res.setHeader('Vary', 'Accept');
@@ -25,7 +25,7 @@ export const imageCacheControl = (req: Request, res: Response, next: NextFunctio
   const maxAge = 60 * 60 * 24 * 7;
 
   // Configura o cache-control otimizado para CDNs
-  res.setHeader('Cache-Control', `public, max-age=${maxAge}, s-maxage=${maxAge}, immutable`);
+  res.setHeader('Cache-Control', `max-age=${maxAge}`);
 
   // Configura o Vary para informar que a resposta pode variar de acordo com o Accept
   res.setHeader('Vary', 'Accept');
