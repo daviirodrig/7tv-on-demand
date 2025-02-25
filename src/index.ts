@@ -148,6 +148,84 @@ app.get('/:emoteName.gif', async (req: Request, res: Response, next: NextFunctio
 app.get('/:emoteName', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const emoteName = req.params.emoteName || '';
   const format = (req.query.format as 'webp' | 'avif' | 'gif') || 'webp';
+
+  // Verifica se o cliente aceita HTML (como navegadores e Discord)
+  const acceptHeader = req.headers.accept || '';
+  if (acceptHeader.includes('text/html')) {
+    try {
+      // Busca o emote pelo nome
+      const emote = await findEmote(emoteName);
+
+      if (!emote) {
+        res.status(404).json({ error: 'Emote não encontrado' });
+        return;
+      }
+
+      // Constrói URLs absolutos para os metadados
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const imageUrl = `${baseUrl}/${emoteName}.${emote.animated ? 'gif' : 'webp'}`;
+      const apiUrl = `${baseUrl}/api/emote/${emoteName}`;
+
+      // Retorna uma página HTML com metadados Open Graph para o Discord
+      res.setHeader('Content-Type', 'text/html');
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>${emoteName} - 7TV On Demand</title>
+            <meta property="og:title" content="${emoteName} - 7TV Emote" />
+            <meta property="og:type" content="website" />
+            <meta property="og:url" content="${baseUrl}/${emoteName}" />
+            <meta property="og:image" content="${imageUrl}" />
+            <meta property="og:image:alt" content="${emoteName} emote" />
+            <meta property="og:description" content="7TV emote: ${emoteName}" />
+            <meta property="og:site_name" content="7TV On Demand" />
+            <meta name="theme-color" content="#6441a5" />
+            <meta http-equiv="refresh" content="0;url=${imageUrl}">
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 20px;
+                text-align: center;
+              }
+              img {
+                max-width: 100%;
+                margin: 20px 0;
+              }
+              .info {
+                margin-top: 20px;
+                color: #666;
+              }
+              a {
+                color: #6441a5;
+                text-decoration: none;
+              }
+              a:hover {
+                text-decoration: underline;
+              }
+            </style>
+          </head>
+          <body>
+            <h1>${emoteName}</h1>
+            <img src="${imageUrl}" alt="${emoteName} emote" />
+            <div class="info">
+              <p>Este é um emote do 7TV.</p>
+              <p><a href="${apiUrl}">Ver informações do emote em JSON</a></p>
+              <p><a href="${baseUrl}">Voltar para a página inicial</a></p>
+            </div>
+          </body>
+        </html>
+      `);
+      return;
+    } catch (error) {
+      next(error);
+      return;
+    }
+  }
+
+  // Se não for uma solicitação de HTML, continua com o comportamento normal
   await handleEmoteRequest(req, res, next, emoteName, format);
 });
 
