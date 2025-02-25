@@ -1,23 +1,25 @@
 # Estágio de build
 FROM node:20-alpine AS builder
 
-# Instala o pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Instala o pnpm globalmente
+RUN npm install -g pnpm
 
 # Define o diretório de trabalho
 WORKDIR /app
 
 # Copia os arquivos de configuração
-COPY package.json pnpm-lock.yaml* ./
+COPY package.json ./
+COPY tsconfig.json ./
+COPY pnpm-lock.yaml* ./
 
 # Instala as dependências
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 # Copia o código fonte
-COPY . .
+COPY src/ ./src/
 
 # Compila o TypeScript
-RUN pnpm build
+RUN npx tsc
 
 # Estágio de produção
 FROM node:20-alpine AS production
@@ -25,8 +27,8 @@ FROM node:20-alpine AS production
 # Define variáveis de ambiente
 ENV NODE_ENV=production
 
-# Instala o pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Instala o pnpm globalmente
+RUN npm install -g pnpm
 
 # Cria um usuário não-root para executar a aplicação
 RUN addgroup -g 1001 -S nodejs && \
@@ -36,10 +38,11 @@ RUN addgroup -g 1001 -S nodejs && \
 WORKDIR /app
 
 # Copia os arquivos de configuração
-COPY package.json pnpm-lock.yaml* ./
+COPY package.json ./
+COPY pnpm-lock.yaml* ./
 
 # Instala apenas as dependências de produção
-RUN pnpm install --prod --frozen-lockfile
+RUN pnpm install --prod
 
 # Copia os arquivos compilados do estágio de build
 COPY --from=builder /app/dist ./dist

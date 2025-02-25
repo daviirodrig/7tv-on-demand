@@ -114,7 +114,10 @@ export const fetchEmotes = async (): Promise<Emote[]> => {
  * @returns Emote encontrado ou null
  */
 export const findEmote = async (emoteName: string): Promise<Emote | null> => {
-  if (!emoteName) return null;
+  if (!emoteName) {
+    console.warn('Nome do emote não fornecido');
+    return null;
+  }
 
   // Normaliza o nome do emote (remove espaços e converte para minúsculas)
   const normalizedName = emoteName.trim().toLowerCase();

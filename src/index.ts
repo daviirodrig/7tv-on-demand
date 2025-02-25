@@ -28,7 +28,7 @@ app.use('/api', cacheControl(1800)); // 30 minutos
 app.use('/:emoteName', imageCacheControl);
 
 // Rota para listar todos os emotes disponíveis
-app.get('/api/emotes', async (_req: Request, res: Response, next: NextFunction) => {
+app.get('/api/emotes', async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const allEmotes = await fetchEmotes();
 
@@ -44,22 +44,28 @@ app.get('/api/emotes', async (_req: Request, res: Response, next: NextFunction) 
       }))
     };
 
-    return res.json(emoteList);
+    res.json(emoteList);
   } catch (error) {
     next(error);
   }
 });
 
 // Rota para buscar informações de um emote específico em JSON
-app.get('/api/emote/:emoteName', async (req: Request, res: Response, next: NextFunction) => {
+app.get('/api/emote/:emoteName', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { emoteName } = req.params;
+
+    if (!emoteName) {
+      res.status(400).json({ error: 'Nome do emote não fornecido' });
+      return;
+    }
 
     // Busca o emote pelo nome
     const emote = await findEmote(emoteName);
 
     if (!emote) {
-      return res.status(404).json({ error: 'Emote não encontrado' });
+      res.status(404).json({ error: 'Emote não encontrado' });
+      return;
     }
 
     // Retorna as informações do emote
@@ -76,16 +82,22 @@ app.get('/api/emote/:emoteName', async (req: Request, res: Response, next: NextF
       }
     };
 
-    return res.json(response);
+    res.json(response);
   } catch (error) {
     next(error);
   }
 });
 
 // Rota principal para buscar emotes (retorna a imagem diretamente)
-app.get('/:emoteName', async (req: Request, res: Response, next: NextFunction) => {
+app.get('/:emoteName', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { emoteName } = req.params;
+
+    if (!emoteName) {
+      res.status(400).json({ error: 'Nome do emote não fornecido' });
+      return;
+    }
+
     const size = (req.query.size as '1x' | '2x' | '3x' | '4x') || '3x';
     const format = (req.query.format as 'webp' | 'avif' | 'gif') || 'webp';
 
@@ -93,7 +105,8 @@ app.get('/:emoteName', async (req: Request, res: Response, next: NextFunction) =
     const emote = await findEmote(emoteName);
 
     if (!emote) {
-      return res.status(404).json({ error: 'Emote não encontrado' });
+      res.status(404).json({ error: 'Emote não encontrado' });
+      return;
     }
 
     // Busca a imagem do emote diretamente
@@ -104,7 +117,7 @@ app.get('/:emoteName', async (req: Request, res: Response, next: NextFunction) =
     res.setHeader('Content-Length', buffer.length);
 
     // Retorna a imagem diretamente
-    return res.send(buffer);
+    res.send(buffer);
   } catch (error) {
     next(error);
   }
